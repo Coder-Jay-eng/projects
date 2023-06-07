@@ -4,6 +4,7 @@ const connect = require('./config/db');
 const { register, loginuser } = require('./controllers/user_controllers');
 const User = require('./models//users_models');
 const bcrypt = require('bcrypt');
+const Movie = require('./models/movie_models');
 const { body, validationResult } = require('express-validator');
 
 app.use(express.json());
@@ -38,9 +39,9 @@ app.post(
     .not()
     .isEmpty()
     .withMessage('Name is required')
-    .isLength({ min: 4, max: 8 })
+    .isLength({ min: 4, max: 80 })
     .withMessage(
-      'Name should have minimum of 4 letters and maximum of 8 letters'
+      'Name should have minimum of 4 letters and maximum of 80 letters'
     ),
   async (req, res) => {
     try {
@@ -67,6 +68,26 @@ app.post(
     }
   }
 );
+
+app.post('/movie', async (req, res) => {
+  try {
+    let movie = await Movie.create(req.body);
+
+    return res.send(movie);
+  } catch (error) {
+    return res.send({ error: error.message });
+  }
+});
+
+app.get('/movies', async (req, res) => {
+  try {
+    let movie = await Movie.find().populate('actor', { password: 0 });
+
+    res.send(movie);
+  } catch (error) {
+    return res.send({ error: error.message });
+  }
+});
 
 app.listen(8080, async () => {
   try {
