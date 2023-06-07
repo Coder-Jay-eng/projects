@@ -6,6 +6,8 @@ const User = require('./models//users_models');
 const bcrypt = require('bcrypt');
 const Movie = require('./models/movie_models');
 const { body, validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const authMiddleware = require('./middleware/authmiddleware');
 
 app.use(express.json());
 
@@ -21,14 +23,22 @@ const auth = async (req, res, next) => {
 
 app.post('/login', async (req, res) => {
   try {
+    let user = await User.find({ email: req.body.email });
+    if (!user) {
+      res.send('Oooops, user is not registered!');
+    }
     const compare = bcrypt.compareSync(req.body.password, user.password);
+    const payLoad = { userId: user._id, role: user.role };
+    const token = jwt.sign({ userId: user._id, role: user.role }, 'Justin', {
+      expiresIn: '1h',
+    });
 
     if (!compare) {
       res.send('Password is incorrect!');
     }
 
-    // console.log('compare', compare);
-    return res.send('Logged in successfully!');
+    console.log('compare', compare);
+    return res.send({ message: 'Logged in successfully!', token: token });
   } catch (error) {
     return res.status(400).send({ error: error.message });
   }
@@ -79,7 +89,7 @@ app.post('/movie', async (req, res) => {
   }
 });
 
-app.get('/movies', async (req, res) => {
+app.get('/movies', authMiddleware, async (req, res) => {
   try {
     let movie = await Movie.find().populate('actor', { password: 0 });
 
